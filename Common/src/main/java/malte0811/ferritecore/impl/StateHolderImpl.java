@@ -37,9 +37,16 @@ public class StateHolderImpl {
             holder.setStateMap((FastMap<S>) LAST_FAST_STATE_MAP.get());
         } else {
             LAST_STATE_MAP.set(states);
-            FastMap<S> globalTable = new FastMap<>(
-                    holder.getVanillaPropertyMap().keySet(), states, FerriteConfig.COMPACT_FAST_MAP.isEnabled()
+            //TODO: CHECK IF NEW FASTMAP WORKS
+            //FastMap<S> globalTable = new FastMap<>(
+            //        holder.getVanillaPropertyMap().keySet(), states, FerriteConfig.COMPACT_FAST_MAP.isEnabled()
+            //);
+            FastMap<S> globalTable = FastMap.of(
+                    holder.getVanillaPropertyMap().keySet(),
+                    states,
+                    FerriteConfig.COMPACT_FAST_MAP.isEnabled()
             );
+
             holder.setStateMap(globalTable);
             LAST_FAST_STATE_MAP.set(globalTable);
         }

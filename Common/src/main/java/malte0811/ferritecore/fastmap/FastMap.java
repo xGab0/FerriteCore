@@ -4,7 +4,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.world.level.block.state.properties.Property;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -12,6 +14,7 @@ import java.util.*;
 /**
  * Maps a Property->Value assignment to a value, while allowing fast access to "neighbor" states
  */
+/*
 public class FastMap<Value> {
     private static final int INVALID_INDEX = -1;
 
@@ -22,7 +25,71 @@ public class FastMap<Value> {
     // would likely be more effort than it's worth
     private final Object2IntMap<Property<?>> toKeyIndex;
     private final ImmutableSet<Property<?>> propertySet;
+*/
+//TODO: check if record conversion is good
+public record FastMap<Value>(
+        List<FastMapKey<?>> keys,
+        List<Value> valueMatrix,
+        // It might be possible to get rid of this (and the equivalent map for values) by sorting the key vectors by
+        // property name (natural order for values) and using a binary search above a given size, but choosing that size
+        // would likely be more effort than it's worth
+        Object2IntMap<Property<?>> toKeyIndex,
+        ImmutableSet<Property<?>> propertySet
+) {
 
+    private static final int INVALID_INDEX = -1;
+
+    public static @NotNull <Value> FastMap<Value> of(
+            Collection<Property<?>> properties,
+            Map<Map<Property<?>, Comparable<?>>, Value> valuesMap,
+            boolean compact)
+    {
+        // TODO: check if fastutil impl is actually worth
+        //List<FastMapKey<?>> keys = new ArrayList<>(properties.size());
+        List<FastMapKey<?>> keys = new ObjectArrayList<>(properties.size());
+        int factorUpTo = 1;
+        Object2IntMap<Property<?>> toKeyIndex = new Object2IntOpenHashMap<>();
+        toKeyIndex.defaultReturnValue(INVALID_INDEX);
+        for (Property<?> prop : properties) {
+            toKeyIndex.put(prop, keys.size());
+            FastMapKey<?> nextKey = compact
+                    ? new CompactFastMapKey<>(prop, factorUpTo)
+                    : new BinaryFastMapKey<>(prop, factorUpTo);
+
+            keys.add(nextKey);
+            factorUpTo *= nextKey.getFactorToNext();
+        }
+
+        // TODO: check if fastutil impl is actually worth
+        //List<Value> valuesList = new ArrayList<>(factorUpTo);
+        List<Value> valuesList = new ObjectArrayList<>(factorUpTo);
+        for (int i = 0; i < factorUpTo; ++i) {
+            valuesList.add(null);
+        }
+        for (Map.Entry<Map<Property<?>, Comparable<?>>, Value> state : valuesMap.entrySet()) {
+            valuesList.set(getIndexOf0(state.getKey(), keys), state.getValue());
+        }
+
+        return new FastMap<>(
+                ImmutableList.copyOf(keys),
+                Collections.unmodifiableList(valuesList),
+                toKeyIndex,
+                ImmutableSet.copyOf(properties)
+        );
+    }
+
+    /**
+     * @return The map index corresponding to the given property-value assignment
+     */
+    private static int getIndexOf0(Map<Property<?>, Comparable<?>> state, List<FastMapKey<?>> keys) {
+        int id = 0;
+        for (FastMapKey<?> k : keys) {
+            id += k.toPartialMapIndex(state.get(k.getProperty()));
+        }
+        return id;
+    }
+
+    /*
     public FastMap(
             Collection<Property<?>> properties, Map<Map<Property<?>, Comparable<?>>, Value> valuesMap, boolean compact
     ) {
@@ -53,6 +120,7 @@ public class FastMap<Value> {
         this.valueMatrix = Collections.unmodifiableList(valuesList);
         this.propertySet = ImmutableSet.copyOf(properties);
     }
+    */
 
     /**
      * Computes the value for a neighbor state

@@ -5,9 +5,18 @@ import it.unimi.dsi.fastutil.Hash;
 import java.util.function.BiPredicate;
 import java.util.function.ToIntFunction;
 
+/*
 public class LambdaBasedHash<T> implements Hash.Strategy<T> {
     private final ToIntFunction<T> hash;
     private final BiPredicate<T, T> equal;
+
+*/
+//TODO: check if record conversion is good
+public record LambdaBasedHash<T>(
+        ToIntFunction<T> hash,
+        BiPredicate<T, T> equal
+
+) implements Hash.Strategy<T> {
 
     public LambdaBasedHash(ToIntFunction<T> hash, BiPredicate<T, T> equal) {
         this.hash = hash;

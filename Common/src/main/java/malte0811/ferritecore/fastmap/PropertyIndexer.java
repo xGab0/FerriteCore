@@ -3,7 +3,7 @@ package malte0811.ferritecore.fastmap;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenCustomHashMap;
-import net.minecraft.Util;
+import malte0811.ferritecore.util.IdentityHashStrategy;
 import net.minecraft.core.Direction;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
@@ -23,7 +23,7 @@ import java.util.Map;
  */
 public abstract class PropertyIndexer<T extends Comparable<T>> {
     private static final Map<Property<?>, PropertyIndexer<?>> KNOWN_INDEXERS = new Object2ObjectOpenCustomHashMap<>(
-            Util.identityStrategy()
+            IdentityHashStrategy.INSTANCE
     );
 
     private final Property<T> property;
